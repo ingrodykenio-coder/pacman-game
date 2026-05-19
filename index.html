@@ -151,14 +151,17 @@
         }
         
         .controls {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-            max-width: 250px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+    display: grid;
+    grid-template-areas:
+        ". up ."
+        "left restart right"
+        ". down .";
+    gap: 10px;
+    margin-top: 20px;
+    max-width: 250px;
+    margin-left: auto;
+    margin-right: auto;
+}
         
         .game-btn {
             background: #222;
@@ -215,6 +218,12 @@
             .game-btn { font-size: 1.3rem; padding: 8px; }
             h1 { font-size: 1.5rem; }
         }
+        #btnUp { grid-area: up; }
+#btnDown { grid-area: down; }
+#btnLeft { grid-area: left; }
+#btnRight { grid-area: right; }
+#btnRestart { grid-area: restart; }
+        
     </style>
 </head>
 <body>
