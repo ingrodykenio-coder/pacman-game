@@ -150,12 +150,13 @@
             border-radius: 40px;
         }
         
-        .controls {
+       .controls {
     display: grid;
     grid-template-areas:
         ". up ."
-        "left restart right"
-        ". down .";
+        "left . right"
+        ". down ."
+        ". restart .";
     gap: 10px;
     margin-top: 20px;
     max-width: 250px;
@@ -182,7 +183,6 @@
         }
         
         .restart-btn {
-            grid-column: span 3;
             background: #333;
             color: white;
             font-size: 0.9rem;
