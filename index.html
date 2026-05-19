@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pacman - Con Modo Asustado</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+        
+        .screen.hidden {
+            display: none;
+        }
+        
+        .start-panel, .records-panel {
+            background: rgba(0,0,0,0.9);
+            padding: 30px 20px;
+            border-radius: 30px;
+            text-align: center;
+            border: 3px solid #FFD700;
+            max-width: 90%;
+            width: 350px;
+        }
+        
+        .records-panel {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        h1 {
+            color: #FFD700;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 0 #FF6600;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            margin: 15px 0;
+            border-radius: 50px;
+            border: 2px solid #FFD700;
+            background: #222;
+            color: white;
+            text-align: center;
+            font-family: monospace;
+        }
+        
+        button {
+            background: #FFD700;
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            margin: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            font-family: monospace;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-secondary {
+            background: #333;
+            color: #FFD700;
+            border: 1px solid #FFD700;
+        }
+        
+        .records-list {
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .record-item {
+            background: #222;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            color: #FFD700;
+            font-size: 0.9rem;
+            border-left: 4px solid #FFD700;
+        }
+        
+        .record-rank {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .record-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .record-score {
+            font-weight: bold;
+        }
+        
+        .game-container {
+            background: black;
+            padding: 10px;
+            border-radius: 20px;
+        }
+        
+        canvas {
+            background-color: black;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            color: yellow;
+            font-weight: bold;
+            font-size: 1rem;
+            background: #111;
+            padding: 8px 15px;
+            border-radius: 40px;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            max-width: 250px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .game-btn {
+            background: #222;
+            border: none;
+            color: yellow;
+            font-size: 1.8rem;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 15px;
+            box-shadow: 0 4px 0 #666;
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        
+        .game-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #666;
+        }
+        
+        .restart-btn {
+            grid-column: span 3;
+            background: #333;
+            color: white;
+            font-size: 0.9rem;
+        }
+        
+        .back-btn {
+            background: #444;
+            color: white;
+            margin-top: 15px;
+        }
+        
+        .player-name {
+            background: #FFD700;
+            color: #000;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .frightened-timer {
+            background: #3366FF;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        @media (max-width: 500px) {
+            .info { font-size: 0.8rem; }
+            .game-btn { font-size: 1.3rem; padding: 8px; }
+            h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Pantalla de Inicio -->
+<div id="startScreen" class="screen">
+    <div class="start-panel">
+        <h1>🍒 PACMAN 🍒</h1>
+        <input type="text" id="playerName" placeholder="Ingresa tu nombre" maxlength="15">
+        <button id="btnStartGame">🎮 JUGAR</button>
+        <button id="btnViewRecords" class="btn-secondary">🏆 VER RECORDS</button>
+    </div>
+</div>
+
+<!-- Pantalla de Records -->
+<div id="recordsScreen" class="screen hidden">
+    <div class="records-panel">
+        <h1>🏆 TOP 10 🏆</h1>
+        <div id="recordsList" class="records-list">
+            <div class="record-item">Cargando...</div>
+        </div>
+        <button id="btnBackToStart" class="back-btn">◀ VOLVER</button>
+        <button id="btnResetRecords" class="btn-secondary" style="background:#600; margin-top:10px;">🗑️ RESET RECORDS</button>
+    </div>
+</div>
+
+<!-- Pantalla del Juego -->
+<div id="gameScreen" style="display: none;">
+    <div class="game-container">
+        <canvas id="gameCanvas" width="450" height="450"></canvas>
+        <div class="info">
+            <span>🍒 <span id="scoreDisplay">0</span></span>
+            <span id="playerNameDisplay" class="player-name"></span>
+            <span>❤️ <span id="livesDisplay">3</span></span>
+            <span id="frightenedTimer" class="frightened-timer" style="display:none;">😨 <span id="timerSeconds">0</span>s</span>
+        </div>
+        <div class="controls">
+            <button class="game-btn" id="btnUp">▲</button>
+            <button class="game-btn" id="btnLeft">◀</button>
+            <button class="game-btn" id="btnDown">▼</button>
+            <button class="game-btn" id="btnRight">▶</button>
+            <button class="game-btn restart-btn" id="btnRestart">🔄 Reiniciar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== SISTEMA DE RECORDS ==========
+    let currentPlayer = "";
+    
+    function loadRecords() {
+        try {
+            const records = localStorage.getItem("pacman_records_mit");
+            if (records) {
+                return JSON.parse(records);
+            }
+        } catch(e) {
+            console.log("Error loading records:", e);
+        }
+        return [];
+    }
+    
+    function saveRecords(records) {
+        try {
+            localStorage.setItem("pacman_records_mit", JSON.stringify(records));
+            return true;
+        } catch(e) {
+            console.log("Error saving records:", e);
+            return false;
+        }
+    }
+    
+    function addRecord(playerName, score) {
+        let records = loadRecords();
+        records.push({ name: playerName, score: score, date: new Date().toLocaleDateString() });
+        records.sort((a, b) => b.score - a.score);
+        records = records.slice(0, 10);
+        saveRecords(records);
+        return records;
+    }
+    
+    function displayRecords() {
+        const records = loadRecords();
+        const container = document.getElementById("recordsList");
+        if (records.length === 0) {
+            container.innerHTML = '<div class="record-item">✨ Sin records aún ✨</div>';
+            return;
+        }
+        
+        container.innerHTML = "";
+        records.forEach((record, index) => {
+            const item = document.createElement("div");
+            item.className = "record-item";
+            item.innerHTML = `
+                <span class="record-rank">#${index + 1}</span>
+                <span class="record-name">${escapeHtml(record.name)}</span>
+                <span class="record-score">${record.score} pts</span>
+            `;
+            container.appendChild(item);
+        });
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function isNewHighScore(score) {
+        const records = loadRecords();
+        if (records.length < 10) return true;
+        return score > records[records.length - 1].score;
+    }
+    
+    // ========== FUNCIÓN DE COLISIÓN ==========
+    function checkCollisionWithWalls(x, y, radius, dirX, dirY) {
+        let newX = x + dirX;
+        let newY = y + dirY;
+        
+        let checkPoints = [
+            { x: newX - radius, y: newY - radius },
+            { x: newX + radius, y: newY - radius },
+            { x: newX - radius, y: newY + radius },
+            { x: newX + radius, y: newY + radius },
+            { x: newX, y: newY }
+        ];
+        
+        for (let point of checkPoints) {
+            let col = Math.floor(point.x / 30);
+            let row = Math.floor(point.y / 30);
+            
+            if (col >= 0 && col < 15 && row >= 0 && row < 15) {
+                if (map[row][col] === 1) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    // ========== IA DE FANTASMAS (MODO NORMAL Y ASUTADO) ==========
+    function updateGhostAI(ghost) {
+        // Si está en modo asustado, huir de Pacman
+        if (frightenedMode && !ghost.isDead) {
+            // Huir: moverse en dirección contraria a Pacman
+            if (Math.random() < 0.1) {
+                let possibleMoves = [];
+                const directions = [
+                    { dx: ghost.speed, dy: 0 },
+                    { dx: -ghost.speed, dy: 0 },
+                    { dx: 0, dy: ghost.speed },
+                    { dx: 0, dy: -ghost.speed }
+                ];
+                
+                for (let dir of directions) {
+                    if (!checkCollisionWithWalls(ghost.x, ghost.y, ghost.radius, dir.dx, dir.dy)) {
+                        const newX = ghost.x + dir.dx;
+                        const newY = ghost.y + dir.dy;
+                        // Distancia AL REVÉS (queremos alejarnos)
+                        const newDistToPlayer = -Math.hypot(newX - pacman.x, newY - pacman.y);
+                        possibleMoves.push({ dir: dir, dist: newDistToPlayer });
+                    }
+                }
+                
+                if (possibleMoves.length > 0) {
+                    possibleMoves.sort((a, b) => b.dist - a.dist);
+                    ghost.dirX = possibleMoves[0].dir.dx;
+                    ghost.dirY = possibleMoves[0].dir.dy;
+                }
+            }
+        } 
+        // Modo normal: perseguir a Pacman
+        else if (!ghost.isDead) {
+            if (Math.random() < 0.08) {
+                let possibleMoves = [];
+                const directions = [
+                    { dx: ghost.speed, dy: 0 },
+                    { dx: -ghost.speed, dy: 0 },
+                    { dx: 0, dy: ghost.speed },
+                    { dx: 0, dy: -ghost.speed }
+                ];
+                
+                for (let dir of directions) {
+                    if (!checkCollisionWithWalls(ghost.x, ghost.y, ghost.radius, dir.dx, dir.dy)) {
+                        const newX = ghost.x + dir.dx;
+                        const newY = ghost.y + dir.dy;
+                        const newDistToPlayer = Math.hypot(newX - pacman.x, newY - pacman.y);
+                        possibleMoves.push({ dir: dir, dist: newDistToPlayer });
+                    }
+                }
+                
+                if (possibleMoves.length > 0) {
+                    if (Math.random() < 0.7) {
+                        possibleMoves.sort((a, b) => a.dist - b.dist);
+                        ghost.dirX = possibleMoves[0].dir.dx;
+                        ghost.dirY = possibleMoves[0].dir.dy;
+                    } else {
+                        const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                        ghost.dirX = randomMove.dir.dx;
+                        ghost.dirY = randomMove.dir.dy;
+                    }
+                }
+            }
+        }
+        
+        // Mover fantasma (si no está muerto)
+        if (!ghost.isDead) {
+            if (!checkCollisionWithWalls(ghost.x, ghost.y, ghost.radius, ghost.dirX, ghost.dirY)) {
+                ghost.x += ghost.dirX;
+                ghost.y += ghost.dirY;
+            } else {
+                const possibleMoves = [
+                    { dx: ghost.speed, dy: 0 },
+                    { dx: -ghost.speed, dy: 0 },
+                    { dx: 0, dy: ghost.speed },
+                    { dx: 0, dy: -ghost.speed }
+                ];
+                
+                for (let move of possibleMoves) {
+                    if (!checkCollisionWithWalls(ghost.x, ghost.y, ghost.radius, move.dx, move.dy)) {
+                        ghost.dirX = move.dx;
+                        ghost.dirY = move.dy;
+                        ghost.x += ghost.dirX;
+                        ghost.y += ghost.dirY;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        ghost.x = Math.min(Math.max(ghost.x, ghost.radius + 2), canvas.width - ghost.radius - 2);
+        ghost.y = Math.min(Math.max(ghost.y, ghost.radius + 2), canvas.height - ghost.radius - 2);
+    }
+    
+    // ========== CONFIGURACIÓN DEL JUEGO ==========
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let score = 0;
+    let lives = 3;
+    let gameOver = false;
+    let gameLoopId = null;
+    let gameRunning = true;
+    
+    // Modo asustado (Frightened Mode)
+    let frightenedMode = false;
+    let frightenedTimer = null;
+    let frightenedStartTime = 0;
+    const FRIGHTENED_DURATION = 15000; // 15 segundos
+    let powerUpActive = false;
+    
+    let pacman = {
+        x: 225, y: 345,
+        radius: 9,
+        angle: 0,
+        mouthOpen: 0.4,
+        dirX: 0, dirY: 0,
+        nextDirX: 0, nextDirY: 0,
+        speed: 2.2
+    };
+    
+    let ghosts = [];
+    
+    // Colores originales de los fantasmas
+    const ghostOriginalColors = ['#FF4444', '#FFB8DE', '#44FF44', '#44B8FF'];
+    
+    function initGhosts() {
+        return [
+            { x: 225, y: 225, radius: 8, color: '#FF4444', originalColor: '#FF4444', dirX: 1.2, dirY: 0, speed: 1.2, isDead: false },
+            { x: 255, y: 225, radius: 8, color: '#FFB8DE', originalColor: '#FFB8DE', dirX: -1.2, dirY: 0, speed: 1.2, isDead: false },
+            { x: 225, y: 255, radius: 8, color: '#44FF44', originalColor: '#44FF44', dirX: 0, dirY: 1.2, speed: 1.2, isDead: false },
+            { x: 165, y: 255, radius: 8, color: '#44B8FF', originalColor: '#44B8FF', dirX: 1.2, dirY: 0, speed: 1.2, isDead: false }
+        ];
+    }
+    
+    // Activar modo asustado
+    function activateFrightenedMode() {
+        if (frightenedTimer) clearTimeout(frightenedTimer);
+        
+        frightenedMode = true;
+        powerUpActive = true;
+        
+        // Poner fantasmas en modo asustado (azul)
+        for (let ghost of ghosts) {
+            if (!ghost.isDead) {
+                ghost.color = '#3366FF';
+            }
+        }
+        
+        // Mostrar timer
+        const timerElement = document.getElementById('frightenedTimer');
+        const timerSecondsSpan = document.getElementById('timerSeconds');
+        timerElement.style.display = 'inline-block';
+        
+        let startTime = Date.now();
+        
+        function updateTimer() {
+            if (!frightenedMode) return;
+            const elapsed = Date.now() - startTime;
+            const remaining = Math.max(0, Math.ceil((FRIGHTENED_DURATION - elapsed) / 1000));
+            timerSecondsSpan.innerText = remaining;
+            
+            if (remaining > 0 && frightenedMode) {
+                setTimeout(updateTimer, 100);
+            }
+        }
+        
+        updateTimer();
+        
+        // Desactivar después de 15 segundos
+        frightenedTimer = setTimeout(() => {
+            deactivateFrightenedMode();
+        }, FRIGHTENED_DURATION);
+    }
+    
+    // Desactivar modo asustado
+    function deactivateFrightenedMode() {
+        frightenedMode = false;
+        powerUpActive = false;
+        
+        // Restaurar colores originales
+        for (let i = 0; i < ghosts.length; i++) {
+            if (!ghosts[i].isDead) {
+                ghosts[i].color = ghostOriginalColors[i];
+            }
+        }
+        
+        const timerElement = document.getElementById('frightenedTimer');
+        timerElement.style.display = 'none';
+        
+        if (frightenedTimer) {
+            clearTimeout(frightenedTimer);
+            frightenedTimer = null;
+        }
+    }
+    
+    // Comer fantasma en modo asustado
+    function eatGhost(ghostIndex) {
+        const ghost = ghosts[ghostIndex];
+        if (frightenedMode && !ghost.isDead) {
+            ghost.isDead = true;
+            ghost.color = '#888888'; // Fantasma muerto (gris)
+            score += 50; // 50 puntos por fantasma
+            updateUI();
+            
+            // Reaparecer después de 5 segundos
+            setTimeout(() => {
+                if (ghost.isDead) {
+                    // Resetear posición y estado
+                    const originalPositions = [
+                        { x: 225, y: 225 },
+                        { x: 255, y: 225 },
+                        { x: 225, y: 255 },
+                        { x: 165, y: 255 }
+                    ];
+                    ghost.x = originalPositions[ghostIndex].x;
+                    ghost.y = originalPositions[ghostIndex].y;
+                    ghost.isDead = false;
+                    ghost.color = ghostOriginalColors[ghostIndex];
+                    
+                    // Si sigue en modo asustado, poner azul
+                    if (frightenedMode) {
+                        ghost.color = '#3366FF';
+                    }
+                }
+            }, 5000); // 5 segundos para reaparecer
+        }
+    }
+    
+    const map = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,2,2,2,2,2,1,2,2,2,2,2,2,2,1],
+    [1,2,1,1,1,2,1,2,1,1,1,2,1,2,1],
+    [1,3,1,1,1,2,1,2,1,1,1,2,1,3,1], 
+    [1,2,1,1,1,2,1,2,1,1,1,2,1,2,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,1,1,2,1,1,1,2,1,1,1,2,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,1,1,1,1,2,1,2,1,2,1,1,1,1,1],
+    [1,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+    [1,2,1,2,1,2,1,1,1,2,1,1,1,2,1],
+    [1,2,1,2,2,2,2,2,2,2,2,2,1,2,1],
+    [1,2,1,1,1,1,1,2,1,1,1,2,1,2,1],
+    [1,3,2,2,2,2,2,2,2,2,2,2,2,3,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+];
+    
+    let pellets = [];
+    
+    function generatePellets() {
+        pellets = [];
+        for (let row = 0; row < map.length; row++) {
+            for (let col = 0; col < map[0].length; col++) {
+                if (map[row][col] === 2) {
+                    pellets.push({ x: col * 30 + 15, y: row * 30 + 15, radius: 3, type: 'pellet' });
+                } else if (map[row][col] === 3) {
+                    pellets.push({ x: col * 30 + 15, y: row * 30 + 15, radius: 6, type: 'power' });
+                }
+            }
+        }
+    }
+    
+    function updateUI() {
+        document.getElementById('scoreDisplay').innerText = score;
+        document.getElementById('livesDisplay').innerText = lives;
+        document.getElementById('playerNameDisplay').innerText = currentPlayer;
+    }
+    
+    function tryMovePacman() {
+        if (!checkCollisionWithWalls(pacman.x, pacman.y, pacman.radius, pacman.nextDirX, pacman.nextDirY)) {
+            pacman.dirX = pacman.nextDirX;
+            pacman.dirY = pacman.nextDirY;
+            pacman.x += pacman.dirX;
+            pacman.y += pacman.dirY;
+        } 
+        else if (!checkCollisionWithWalls(pacman.x, pacman.y, pacman.radius, pacman.dirX, pacman.dirY)) {
+            pacman.x += pacman.dirX;
+            pacman.y += pacman.dirY;
+        }
+        
+        if (pacman.x < 0) pacman.x = canvas.width;
+        if (pacman.x > canvas.width) pacman.x = 0;
+        if (pacman.y < 0) pacman.y = canvas.height;
+        if (pacman.y > canvas.height) pacman.y = 0;
+    }
+    
+    function moveGhosts() {
+        for (let i = 0; i < ghosts.length; i++) {
+            updateGhostAI(ghosts[i]);
+        }
+    }
+    
+    function checkPelletCollision() {
+        for (let i = 0; i < pellets.length; i++) {
+            let p = pellets[i];
+            let dx = pacman.x - p.x;
+            let dy = pacman.y - p.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < pacman.radius + p.radius) {
+                pellets.splice(i, 1);
+                if (p.type === 'pellet') {
+                    score += 10;
+                }
+                if (p.type === 'power') {
+                    score += 50;
+                    activateFrightenedMode(); // ACTIVAR MODO ASUSTADO
+                }
+                updateUI();
+                break;
+            }
+        }
+        if (pellets.length === 0 && !gameOver) {
+            gameOver = true;
+            endGame();
+        }
+    }
+    
+    function checkGhostCollision() {
+        for (let i = 0; i < ghosts.length; i++) {
+            let dx = pacman.x - ghosts[i].x;
+            let dy = pacman.y - ghosts[i].y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < pacman.radius + ghosts[i].radius) {
+                // Si está en modo asustado y el fantasma no está muerto
+                if (frightenedMode && !ghosts[i].isDead) {
+                    eatGhost(i);
+                } 
+                // Si no está en modo asustado o el fantasma está vivo
+                else if (!ghosts[i].isDead) {
+                    lives--;
+                    updateUI();
+                    if (lives <= 0) {
+                        gameOver = true;
+                        endGame();
+                    } else {
+                        resetPositions();
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    function resetPositions() {
+        pacman = {
+            x: 225, y: 345, radius: 9, angle: 0, mouthOpen: 0.4,
+            dirX: 0, dirY: 0, nextDirX: 0, nextDirY: 0, speed: 2.2
+        };
+        ghosts = initGhosts();
+        
+        // Desactivar modo asustado al resetear
+        if (frightenedMode) {
+            deactivateFrightenedMode();
+        }
+    }
+    
+    function endGame() {
+        if (gameLoopId) cancelAnimationFrame(gameLoopId);
+        
+        const isHigh = isNewHighScore(score);
+        addRecord(currentPlayer, score);
+        
+        let message = `🎮 GAME OVER 🎮\n\n👤 ${currentPlayer}\n🍒 Puntaje: ${score}`;
+        if (isHigh) {
+            message += `\n🏆 ¡NUEVO RECORD! 🏆`;
+        }
+        alert(message);
+        
+        // Desactivar modo asustado
+        if (frightenedMode) {
+            deactivateFrightenedMode();
+        }
+        
+        document.getElementById("gameScreen").style.display = "none";
+        document.getElementById("startScreen").classList.remove("hidden");
+        gameRunning = false;
+    }
+    
+    function drawMap() {
+        for (let row = 0; row < map.length; row++) {
+            for (let col = 0; col < map[0].length; col++) {
+                if (map[row][col] === 1) {
+                    ctx.fillStyle = "#2255FF";
+                    ctx.fillRect(col * 30, row * 30, 28, 28);
+                }
+            }
+        }
+    }
+    
+    function drawPellets() {
+        for (let p of pellets) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = p.type === 'power' ? "#FFAA44" : "#FFD966";
+            ctx.fill();
+        }
+    }
+    
+    function drawPacman() {
+        let angle = 0;
+        if (pacman.dirX === 1) angle = 0;
+        else if (pacman.dirX === -1) angle = Math.PI;
+        else if (pacman.dirY === -1) angle = -Math.PI / 2;
+        else if (pacman.dirY === 1) angle = Math.PI / 2;
+        
+        let startAngle = angle + pacman.mouthOpen;
+        let endAngle = angle + 2 * Math.PI - pacman.mouthOpen;
+        ctx.beginPath();
+        ctx.arc(pacman.x, pacman.y, pacman.radius, startAngle, endAngle);
+        ctx.lineTo(pacman.x, pacman.y);
+        ctx.fillStyle = "#FFFF00";
+        ctx.fill();
+        pacman.mouthOpen = 0.3 + Math.sin(Date.now() * 0.015) * 0.2;
+    }
+    
+    function drawGhosts() {
+        for (let g of ghosts) {
+            ctx.beginPath();
+            ctx.arc(g.x, g.y, g.radius, 0, Math.PI * 2);
+            ctx.fillStyle = g.color;
+            ctx.fill();
+            
+            // Ojos (siempre blancos)
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(g.x - 3, g.y - 2, 2.5, 0, Math.PI * 2);
+            ctx.arc(g.x + 3, g.y - 2, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Pupilas
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(g.x - 3, g.y - 2, 1.2, 0, Math.PI * 2);
+            ctx.arc(g.x + 3, g.y - 2, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Modo asustado: cejas asustadas
+            if (frightenedMode && !g.isDead) {
+                ctx.beginPath();
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 1.5;
+                ctx.moveTo(g.x - 5, g.y - 5);
+                ctx.lineTo(g.x - 2, g.y - 4);
+                ctx.moveTo(g.x + 5, g.y - 5);
+                ctx.lineTo(g.x + 2, g.y - 4);
+                ctx.stroke();
+            }
+        }
+    }
+    
+    function gameLoop() {
+        if (gameOver || !gameRunning) return;
+        
+        tryMovePacman();
+        moveGhosts();
+        checkPelletCollision();
+        checkGhostCollision();
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawMap();
+        drawPellets();
+        drawGhosts();
+        drawPacman();
+        
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+    
+    function startGame(playerName) {
+        currentPlayer = playerName;
+        score = 0;
+        lives = 3;
+        gameOver = false;
+        gameRunning = true;
+        
+        // Resetear modo asustado
+        if (frightenedMode) {
+            deactivateFrightenedMode();
+        }
+        frightenedMode = false;
+        
+        generatePellets();
+        ghosts = initGhosts();
+        pacman = {
+            x: 225, y: 345, radius: 9, angle: 0, mouthOpen: 0.4,
+            dirX: 0, dirY: 0, nextDirX: 0, nextDirY: 0, speed: 2.2
+        };
+        
+        updateUI();
+        
+        if (gameLoopId) cancelAnimationFrame(gameLoopId);
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+    
+    function setDirection(dx, dy) {
+        if (gameOver || !gameRunning) return;
+        pacman.nextDirX = dx;
+        pacman.nextDirY = dy;
+    }
+    
+    // Eventos
+    document.getElementById('btnStartGame').addEventListener('click', () => {
+        const name = document.getElementById('playerName').value.trim();
+        if (name === "") {
+            alert("¡Por favor ingresa tu nombre!");
+            return;
+        }
+        document.getElementById("startScreen").classList.add("hidden");
+        document.getElementById("gameScreen").style.display = "block";
+        startGame(name);
+    });
+    
+    document.getElementById('btnViewRecords').addEventListener('click', () => {
+        displayRecords();
+        document.getElementById("startScreen").classList.add("hidden");
+        document.getElementById("recordsScreen").classList.remove("hidden");
+    });
+    
+    document.getElementById('btnBackToStart').addEventListener('click', () => {
+        document.getElementById("recordsScreen").classList.add("hidden");
+        document.getElementById("startScreen").classList.remove("hidden");
+    });
+    
+    document.getElementById('btnResetRecords').addEventListener('click', () => {
+        if (confirm("¿Borrar todos los records? Esta acción no se puede deshacer.")) {
+            localStorage.removeItem("pacman_records_mit");
+            displayRecords();
+        }
+    });
+    
+    document.getElementById('btnUp').addEventListener('click', () => setDirection(0, -pacman.speed));
+    document.getElementById('btnDown').addEventListener('click', () => setDirection(0, pacman.speed));
+    document.getElementById('btnLeft').addEventListener('click', () => setDirection(-pacman.speed, 0));
+    document.getElementById('btnRight').addEventListener('click', () => setDirection(pacman.speed, 0));
+    document.getElementById('btnRestart').addEventListener('click', () => {
+        if (currentPlayer) {
+            startGame(currentPlayer);
+        }
+    });
+    
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') setDirection(0, -pacman.speed);
+        if (e.key === 'ArrowDown') setDirection(0, pacman.speed);
+        if (e.key === 'ArrowLeft') setDirection(-pacman.speed, 0);
+        if (e.key === 'ArrowRight') setDirection(pacman.speed, 0);
+        if (e.key === 'r') startGame(currentPlayer);
+    });
+    
+    generatePellets();
+</script>
+</body>
+</html>
